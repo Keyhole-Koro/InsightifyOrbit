@@ -10,27 +10,27 @@ interface CubeProps {
   globalHovered: boolean;
   setGlobalHovered: (hovered: boolean) => void;
   updatePosition: (index: number, pos: THREE.Vector3) => void;
+  nodeSize: number;
+  nodeColors: string[];
 }
 
-const COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD', '#FF9F43', '#54A0FF', '#5F27CD'];
-
-const Cube: React.FC<CubeProps> = ({ index, isAligned, count, globalHovered, setGlobalHovered, updatePosition }) => {
+const Cube: React.FC<CubeProps> = ({ index, isAligned, count, globalHovered, setGlobalHovered, updatePosition, nodeSize, nodeColors }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
   
   // Assign a random color based on index
-  const color = useMemo(() => COLORS[index % COLORS.length], [index]);
+  const color = useMemo(() => nodeColors[index % nodeColors.length], [index, nodeColors]);
   
   // Target grid position
   const gridPos = useMemo(() => {
     const cols = 5;
-    const spacing = 1.2;
+    const spacing = nodeSize * 2.4;
     const row = Math.floor(index / cols);
     const col = index % cols;
     const x = (col - (cols - 1) / 2) * spacing;
     const y = (row - (Math.ceil(count / cols) - 1) / 2) * spacing;
     return new THREE.Vector3(x, y, 3);
-  }, [index, count]);
+  }, [index, count, nodeSize]);
 
   // Fibonacci sphere distribution for even spacing
   const basePos = useMemo(() => {
@@ -111,7 +111,7 @@ const Cube: React.FC<CubeProps> = ({ index, isAligned, count, globalHovered, set
       onPointerOver={handlePointerOver}
       onPointerOut={handlePointerOut}
     >
-      <boxGeometry args={[0.5, 0.5, 0.5]} />
+      <boxGeometry args={[nodeSize, nodeSize, nodeSize]} />
       <meshStandardMaterial color={hovered ? "white" : color} roughness={0.3} />
       <Edges color="white" />
       
@@ -136,12 +136,9 @@ const Cube: React.FC<CubeProps> = ({ index, isAligned, count, globalHovered, set
 };
 
 // Component to draw curved lines between cubes
-const CubeConnections = ({ positions, count }: { positions: React.MutableRefObject<THREE.Vector3[]>, count: number }) => {
+const CubeConnections = ({ positions, count, edgeColor, edgeOpacity }: { positions: React.MutableRefObject<THREE.Vector3[]>, count: number, edgeColor: string, edgeOpacity: number }) => {
     const linesRef = useRef<any>(null);
     
-    // We want multiple connections per cube.
-    // Let's connect each cube to its 2 nearest neighbors in the sequence (i+1, i+2)
-    // Or just connect i to i+1 and i+2.
     const connectionsPerCube = 2;
     
     const curves = useMemo(() => {
@@ -168,12 +165,6 @@ const CubeConnections = ({ positions, count }: { positions: React.MutableRefObje
             const start = positions.current[i];
             
             for (let j = 1; j <= connectionsPerCube; j++) {
-                // Connect to next neighbors in the loop
-                const targetIndex = (i + j * 3) % count; // Skip some to make it more web-like? Or just +j
-                // Using +j creates a ribbon. Using +something_coprime creates a web.
-                // Let's try connecting to i+1 and i+5 (random-ish)
-                // Or just i+1 and i+2 for simplicity first.
-                // Let's do i+1 and i+3 for variety.
                 const offset = j === 1 ? 1 : 3;
                 const end = positions.current[(i + offset) % count];
                 
@@ -196,20 +187,46 @@ const CubeConnections = ({ positions, count }: { positions: React.MutableRefObje
     return (
         <lineSegments ref={linesRef}>
             <bufferGeometry />
-            <lineBasicMaterial color="rgba(255,255,255,0.3)" transparent opacity={0.3} linewidth={1} />
+            <lineBasicMaterial color={edgeColor} transparent opacity={edgeOpacity} linewidth={1} />
         </lineSegments>
     );
 };
 
-const OrbitingCubes: React.FC = () => {
+interface OrbitingCubesProps {
+  nodeCount?: number;
+  nodeSize?: number;
+  nodeColors?: string[];
+  edgeColor?: string;
+  edgeOpacity?: number;
+}
+
+const DEFAULT_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD', '#FF9F43', '#54A0FF', '#5F27CD'];
+
+const OrbitingCubes: React.FC<OrbitingCubesProps> = ({ 
+  nodeCount = 15,
+  nodeSize = 0.5,
+  nodeColors = DEFAULT_COLORS,
+  edgeColor = "white",
+  edgeOpacity = 0.3
+}) => {
   const [isAligned, setIsAligned] = useState(false);
   const [globalHovered, setGlobalHovered] = useState(false);
-  const count = 15;
   
-  const positionsRef = useRef<THREE.Vector3[]>(Array.from({ length: count }, () => new THREE.Vector3()));
+  // Store positions of all cubes to draw lines between them
+  // We need to recreate the ref array if nodeCount changes, but useRef doesn't update automatically.
+  // However, for this demo, we can just initialize with a large enough array or use a state-based approach if dynamic resizing is needed.
+  // For simplicity, we'll assume nodeCount doesn't change drastically at runtime, or we re-render.
+  const positionsRef = useRef<THREE.Vector3[]>(Array.from({ length: nodeCount }, () => new THREE.Vector3()));
+  
+  // If nodeCount changes, we need to resize the array
+  useMemo(() => {
+      positionsRef.current = Array.from({ length: nodeCount }, () => new THREE.Vector3());
+  }, [nodeCount]);
 
   const updatePosition = (index: number, pos: THREE.Vector3) => {
-      positionsRef.current[index].copy(pos);
+      if (positionsRef.current[index]) {
+          positionsRef.current[index].copy(pos);
+      }
   };
 
   return (
@@ -223,20 +240,27 @@ const OrbitingCubes: React.FC = () => {
             <meshStandardMaterial color="lightblue" wireframe />
         </Sphere>
 
-        {Array.from({ length: count }).map((_, i) => (
+        {Array.from({ length: nodeCount }).map((_, i) => (
           <Cube 
             key={i} 
             index={i} 
             isAligned={isAligned} 
-            count={count} 
+            count={nodeCount} 
             globalHovered={globalHovered}
             setGlobalHovered={setGlobalHovered}
             updatePosition={updatePosition}
+            nodeSize={nodeSize}
+            nodeColors={nodeColors}
           />
         ))}
         
         {!isAligned && (
-            <CubeConnections positions={positionsRef} count={count} />
+            <CubeConnections 
+              positions={positionsRef} 
+              count={nodeCount} 
+              edgeColor={edgeColor}
+              edgeOpacity={edgeOpacity}
+            />
         )}
         
         <OrbitControls />
