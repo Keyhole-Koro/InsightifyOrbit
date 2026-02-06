@@ -1,6 +1,6 @@
 import React, { useRef, useMemo, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Sphere, Environment } from '@react-three/drei';
+import { OrbitControls, Sphere, Environment, Html } from '@react-three/drei';
 import * as THREE from 'three';
 
 interface CubeProps {
@@ -11,6 +11,7 @@ interface CubeProps {
 
 const Cube: React.FC<CubeProps> = ({ index, isAligned, count }) => {
   const meshRef = useRef<THREE.Mesh>(null);
+  const [hovered, setHovered] = useState(false);
   
   // Target grid position
   const gridPos = useMemo(() => {
@@ -58,9 +59,30 @@ const Cube: React.FC<CubeProps> = ({ index, isAligned, count }) => {
   });
 
   return (
-    <mesh ref={meshRef}>
+    <mesh 
+      ref={meshRef}
+      onPointerOver={() => setHovered(true)}
+      onPointerOut={() => setHovered(false)}
+    >
       <boxGeometry args={[0.5, 0.5, 0.5]} />
-      <meshStandardMaterial color={"hotpink"} roughness={0.3} />
+      <meshStandardMaterial color={hovered ? "orange" : "hotpink"} roughness={0.3} />
+      
+      {hovered && (
+        <Html distanceFactor={10}>
+          <div style={{
+            background: 'rgba(0, 0, 0, 0.8)',
+            color: 'white',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none',
+            fontSize: '12px',
+            border: '1px solid hotpink'
+          }}>
+            Cube #{index + 1} Details
+          </div>
+        </Html>
+      )}
     </mesh>
   );
 };
