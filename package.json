@@ -1,29 +1,51 @@
 {
-  "name": "insightify-orbit",
-  "private": true,
-  "version": "0.0.0",
+  "name": "@keyhole-koro/insightify-orbit",
+  "version": "0.0.1",
   "type": "module",
+  "main": "./dist/insightify-orbit.umd.js",
+  "module": "./dist/insightify-orbit.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/insightify-orbit.es.js",
+      "require": "./dist/insightify-orbit.umd.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "build": "tsc && vite build",
+    "lint": "eslint . --ext js,jsx,ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@react-three/fiber": "^8.0.0",
+    "@react-three/drei": "^9.0.0",
+    "three": "^0.160.0"
   },
   "dependencies": {
     "@react-three/drei": "^9.0.0",
     "@react-three/fiber": "^8.0.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
     "three": "^0.160.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
+    "@types/three": "^0.160.0",
     "@vitejs/plugin-react": "^4.2.1",
     "eslint": "^8.55.0",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
-    "vite": "^5.0.8"
+    "typescript": "^5.2.2",
+    "vite": "^5.0.8",
+    "vite-plugin-dts": "^3.7.0"
   }
 }

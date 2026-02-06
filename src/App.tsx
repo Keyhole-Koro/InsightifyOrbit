@@ -1,6 +1,6 @@
 import React from 'react';
-import OrbitingCubes from './OrbitingCubes';
-import OrbitingRects from './OrbitingRects';
+import OrbitingCubes from './OrbitingCubes.tsx';
+import OrbitingRects from './OrbitingRects.tsx';
 
 const App: React.FC = () => {
   return (
